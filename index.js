@@ -281,9 +281,9 @@ function updateFile(file, action) {
 			doesLambdaExist(lambdaName).then(data=>{
 				updateLambda(thisLambdaFolder)
 			}).catch(err=>{
-				
+
 				console.log("Lambda does not exist?",err.statusCode)
-				
+
 				doCreateLambda();
 
 				function doCreateLambda(roleArn){
@@ -364,7 +364,13 @@ function installModules(file, action){
 					} else {
 						fs.writeFileSync(path.normalize(`${lambdaFolder}${path.sep}.build${path.sep}${lambdaName}.zip`), data.Body, 'binary');
 					}
-					updateLambda(`${lambdaFolder}${path.sep}${lambdaName}`)
+
+					doesLambdaExist('lambdaBuilder').catch(err=>{
+						createLambda(`${lambdaFolder}${path.sep}${lambdaName}`)
+					}).then(()=>{
+						updateLambda(`${lambdaFolder}${path.sep}${lambdaName}`);
+					});
+
 				});
 
 			});
@@ -459,7 +465,7 @@ function createLambda(thisLambdaFolder, roleOverride) {
 			FunctionName	: lambdaName, /* required */
 			Handler				: "index.handler", /* required */
 			Role					: roleOverride || '', 					/* required */
-			Runtime				: supportedNodeVer || "nodejs6.10",	/* required */
+			Runtime				: supportedNodeVer || "nodejs8.10",	/* required */
 			Timeout				: 900, //Max is 900
 			MemorySize		: 512, // Max is 3008MB
 			Description		: ""
@@ -714,7 +720,7 @@ function createRole(RoleName, Description, lambdaBuilderRolePolicy){
 		process.exit();
 	}).then(accountId=>{
 	*/
-	
+
 		const lambdaBuilderPolicy = {
 			"Version": "2012-10-17",
 			"Statement": [
