@@ -6,7 +6,7 @@ const { exec } = require('child_process');
 const Promise = require('bluebird');
 const Duplex = require('stream').Duplex;
 const Zip = require('node-zip');
-const unzip = require('unzip');
+const unzip = require('unzipper');
 const glob = require('glob');
 const rimraf = require('rimraf');
 
