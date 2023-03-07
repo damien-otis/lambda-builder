@@ -11,6 +11,7 @@ const Promise = require('bluebird');
 const path = require('path');
 const chokidar = require('chokidar');
 
+const atob = require('atob');
 
 const basePath = path.resolve(process.cwd())
 console.log("basePath:",basePath,'\n');
@@ -25,7 +26,13 @@ var lambdaNodeVersions = [
 	'nodejs', 'nodejs', 'nodejs', 'nodejs', // v0.x - v3.x
 	'nodejs4.3', 'nodejs4.3', 	// v4.x - 5.x
 	'nodejs6.10', 'nodejs6.10', // v6.x - 7.x
-	'nodejs8.10', 'nodejs8.10'	// v8.x = 9.x
+	'nodejs8.10', 'nodejs8.10',	// v8.x = 9.x
+	'nodejs10.x', 'nodejs10.x',
+	'nodejs12.x', 'nodejs12.x',
+	'nodejs14.x', 'nodejs14.x',
+	'nodejs16.x', 'nodejs16.x',
+	'nodejs18.x', 'nodejs18.x',
+	
 ];
 
 var nodever = process.version;
@@ -46,7 +53,13 @@ console.log("config",config)
 //	process.exit();
 //}
 
-const lambdaFolder = path.resolve(path.normalize(process.cwd().replace(/^\"|"$/g,'')));
+let lambdaFolder = '';
+if (process.env.INIT_CWD){
+	lambdaFolder = path.resolve(path.normalize(process.env.INIT_CWD.replace(/^\"|"$/g,'')));
+} else {
+	lambdaFolder = path.resolve(path.normalize(process.cwd().replace(/^\"|"$/g,'')));
+}
+
 console.log("LAMBDAFOLDER",lambdaFolder)
 
 const buildFolder = `${lambdaFolder}/.build`;
@@ -74,6 +87,11 @@ try{
 		console.log(" > Please use --REGION= to set AWS Lambda region\n");
 	}
 	if (argv.BUCKET) {
+		config.lambdaS3Bucket = argv.BUCKET;
+	} else {
+		console.log(" > Please use --BUCKET= to set AWS S3 bucket that lambda build into. The your default AWS profile must have full access there.\n");
+	}
+	if (argv.AWSPROFILE) {
 		config.lambdaS3Bucket = argv.BUCKET;
 	} else {
 		console.log(" > Please use --BUCKET= to set AWS S3 bucket that lambda build into. The your default AWS profile must have full access there.\n");
@@ -116,9 +134,9 @@ global.lambdaS3Bucket = config.lambdaS3Bucket;
 console.log("\nLambda Builder Config:",JSON.stringify(config,null,4));
 
 //-----------------------------------------------------------------------------------
-
+console.log("AWSPROFILE:",argv.AWSPROFILE)
 const AWS = require('aws-sdk');
-AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 'default'}); // {profile: config.profile}
+AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: argv.AWSPROFILE || 'default'}); // {profile: config.profile}
 const lambda = new AWS.Lambda({region: config.region});
 const s3 = new AWS.S3({region: config.region});
 const sts = new AWS.STS();
@@ -276,8 +294,8 @@ function updateFile(file, action) {
 				console.log(err, err.stack); // an error occurred
 			}
 
-			var thisLambdaFolder = path.normalize(`${lambdaFolder}${path.sep}${lambdaName}`);
-
+			var thisLambdaFolder = path.normalize(`${lambdaFolder}${path.sep}${getLambdaName(file, true)}`);
+console.log('>>>>>>thisLambdaFolder:',thisLambdaFolder)
 			doesLambdaExist(lambdaName).then(data=>{
 				updateLambda(thisLambdaFolder)
 			}).catch(err=>{
@@ -327,7 +345,7 @@ function installModules(file, action){
 			var filename = path.normalize(o).split(path.sep).pop();
 
 			zipFiles.push(new Promise((resolve, reject)=>{
-
+console.log(o)
 				fs.readFile(o, 'utf8', (err, data)=>{
 					if (err){
 						console.log("error reading file:",o);
@@ -356,19 +374,20 @@ function installModules(file, action){
 
 			runLambdaBuilder(lambdaName, data, (err, packagedZip)=>{
 
-				console.log("Lambda rebuild complete.")
-
+				console.log("Lambda rebuild complete.",err,packagedZip)
+				
 				s3.getObject(JSON.parse(packagedZip), function(err, data) {
 					if (err) {
-						console.log(err, err.stack);
+						console.log('s3.getObject error:',err);
+						return
 					} else {
 						fs.writeFileSync(path.normalize(`${lambdaFolder}${path.sep}.build${path.sep}${lambdaName}.zip`), data.Body, 'binary');
 					}
 
-					doesLambdaExist('lambdaBuilder').catch(err=>{
-						createLambda(`${lambdaFolder}${path.sep}${lambdaName}`)
+					doesLambdaExist(lambdaName).catch(err=>{
+						createLambda(`${lambdaFolder}${path.sep}${getLambdaName(file, true)}`)
 					}).then(()=>{
-						updateLambda(`${lambdaFolder}${path.sep}${lambdaName}`);
+						updateLambda(`${lambdaFolder}${path.sep}${getLambdaName(file, true)}`);
 					});
 
 				});
@@ -403,6 +422,9 @@ function runLambdaBuilder(name, data, callback) {
 				console.log("runLambdaBuilder Error:",err);
 				return
 			}
+			if (data.LogResult){
+				console.log("\nLogResult:\n",atob(data.LogResult))
+			}
 			callback(null, data.Payload);
 		});
 
@@ -435,7 +457,7 @@ function doesLambdaExist(lambdaName) {
 
 function getLambdaPackageConfig(thisLambdaFolder) {
 	var packageJsonFile = path.normalize(`${thisLambdaFolder}${path.sep}package.json`);
-
+console.log('packageJsonFile',packageJsonFile)
 	var packageConfig = {};
 	var stats = fs.statSync(packageJsonFile);
 	if (!stats.isFile()) {
@@ -452,7 +474,6 @@ function getLambdaPackageConfig(thisLambdaFolder) {
 
 function createLambda(thisLambdaFolder, roleOverride) {
 	return new Promise((resolve, reject)=>{
-
 		var lambdaName = getLambdaName(thisLambdaFolder);
 
 		console.log("createLambda:",lambdaName);
@@ -465,7 +486,7 @@ function createLambda(thisLambdaFolder, roleOverride) {
 			FunctionName	: lambdaName, /* required */
 			Handler				: "index.handler", /* required */
 			Role					: roleOverride || '', 					/* required */
-			Runtime				: supportedNodeVer || "nodejs8.10",	/* required */
+			Runtime				: supportedNodeVer || "nodejs12.x",	/* required */
 			Timeout				: 900, //Max is 900
 			MemorySize		: 512, // Max is 3008MB
 			Description		: ""
@@ -477,6 +498,7 @@ function createLambda(thisLambdaFolder, roleOverride) {
 		if (!params.Role) {
 			console.log("No role specified, using LambdaExecute Role...");
 			createLambdaExecuteRole().then(roleArn=>{
+console.log("ROLE ARN:",roleArn)				
 				params.Role = roleArn;
 				createLambdaFunction();
 			});
@@ -486,9 +508,10 @@ function createLambda(thisLambdaFolder, roleOverride) {
 
 		//--------------------------------------------------------------------
 		function createLambdaFunction(){
+			console.log("createLambdaFunction...")
 			lambda.createFunction(params, function(err, data) {
 				if (err) {
-					//console.log(err, err.stack, JSON.stringify(params,null,4))
+					console.log(err, err.stack, JSON.stringify(params,null,4))
 					reject(params.Role);
 					return
 				}
@@ -506,7 +529,7 @@ function updateLambda(thisLambdaFolder) {
 
 	var lambdaName = getLambdaName(thisLambdaFolder);
 
-	var packageConfig = getLambdaPackageConfig(thisLambdaFolder);
+	//var packageConfig = getLambdaPackageConfig(thisLambdaFolder);
 
 	var params = {
 		FunctionName: lambdaName, /* required */
@@ -545,28 +568,51 @@ function buildLambdaBuilder(){
 
 	console.log("buildLambdaBuilder...");
 
-	makeZip(path.resolve(`${lambdaBuilderDir}${path.sep}LambdaBuilder${path.sep}lambdaBuilder`), (zipData)=>{
-		buildLambda(zipData, 'lambdaBuilder', (err, installedLambda)=>{
-
-			let params = {
-				Body:  new Buffer(installedLambda, 'base64'),
-				Bucket: config.lambdaS3Bucket,
-				Key: `lambdaBuilder.zip`,
-				ContentType: 'application/zip'
-			};
-
-			s3.putObject(params, function(err, data) {
-				if (err) {
-					console.log(err, err.stack); // an error occurred
+	let params = {
+  	Bucket: config.lambdaS3Bucket
+ 	};
+ 	s3.headBucket(params, (err, data) => {
+  	if (err){
+			console.log("lambdaBuilder bucket does not exist, attempting to create it:", params.Bucket)
+		//	console.log(err, err.stack); // an error occurred
+			s3.createBucket(params, (err, data) => {
+				if (err){
+					console.log("Could not create lambdaBuilder bucket:", params.Bucket)
+					console.error(err)
+				} else {
+					startBuild()
 				}
+			})
+		} else {
+			startBuild()
+		}
+	});
 
-				createLambdaBuilderRole().then(roleArn=>{
-					setTimeout(()=>{createLambdaBuilderLambda(roleArn)},5000);
-				})
-			});
+	
+	function startBuild(){
+		makeZip(path.resolve(`${lambdaBuilderDir}${path.sep}LambdaBuilder${path.sep}lambdaBuilder`), (zipData)=>{
+			buildLambda(zipData, 'lambdaBuilder', (err, installedLambda)=>{
 
-		})
-	}, [`node_modules/**/*`]);
+				let params = {
+					Body:  new Buffer(installedLambda, 'base64'),
+					Bucket: config.lambdaS3Bucket,
+					Key: `lambdaBuilder.zip`,
+					ContentType: 'application/zip'
+				};
+
+				s3.putObject(params, function(err, data) {
+					if (err) {
+						console.log(err, err.stack); // an error occurred
+					}
+
+					createLambdaBuilderRole().then(roleArn=>{
+						setTimeout(()=>{createLambdaBuilderLambda(roleArn)},5000);
+					})
+				});
+
+			})
+		}, [`node_modules/**/*`]);
+	}
 
 }
 
@@ -577,7 +623,7 @@ function createLambdaBuilderLambda(roleArn){
 	createLambda(lambdaBuilderPath, roleArn)
 	.then(()=>{
 		console.log("LambdaBuilder created, ready to work.")
-	}).catch(err=>{
+	}).catch(roleArn => {
 		//console.log(">>>ERR:",err)
 		console.log("Retry create lambda...")
 		setTimeout(()=>{createLambdaBuilderLambda(roleArn)}, 1000);
@@ -618,11 +664,11 @@ function createLambdaBuilderRole(){
 	return new Promise((resolve, reject)=>{
 		getRoles((err, roles)=>{
 			if (roles && roles.length > 0) {
-				var hasRole = roles.reduce((a,o)=>{return o.RoleName === 'LambdaBuilder' ? o : a},undefined);
+				var hasRole = roles.reduce((a,o)=>{return o.RoleName === 'lambdaBuilder' ? o : a},undefined);
 				if (hasRole){
 					resolve(hasRole.Arn);
 				} else {
-					createRole("LambdaBuilder", "Build node_modules inside AWS Lambda, and deploy Lambda functions", {
+					createRole("lambdaBuilder", "Build node_modules inside AWS Lambda, and deploy Lambda functions", {
 						"Version": "2012-10-17",
 						"Statement": [
 							{

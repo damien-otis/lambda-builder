@@ -3,9 +3,9 @@
 
 	Accepts a form POST with a .ZIP file encoded as base64 in the body, and a 'name' querystring parameter.
 
-	Unzips the .ZIP file to a temp folder, runs npm install, and then Zips the results into a file.
+	Unzips the .zip file to a temp folder, runs npm install, and then zips the results into a file.
 
-	Returns a .ZIP file encoded as base64 data in the response body.
+	Returns a Bucket/Key to a .zip file on S3 in the response body.
 
 */
 const { buildLambda } = require('buildLambda');

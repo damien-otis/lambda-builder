@@ -10,6 +10,9 @@ const unzip = require('unzipper');
 const glob = require('glob');
 const rimraf = require('rimraf');
 
+const yargs = require('yargs');
+const argv = yargs.argv;
+
 const tmp_folder = os.tmpdir ? os.tmpdir() : os.tmpDir();
 const isLambda = (process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined);
 console.log("tmp_folder",tmp_folder);
@@ -17,6 +20,9 @@ console.log("tmp_folder",tmp_folder);
 const packageJSON = require('./package.json');
 
 const AWS = require('aws-sdk');
+if (!isLambda){
+	AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: argv.AWSPROFILE || 'default'}); // {profile: config.profile}
+}
 const s3 = new AWS.S3();
 
 // --------------------------------------------------------------------------------------------------------
@@ -106,11 +112,8 @@ function makeZip(folder, callback, ignore){
 			return callback(err);
 		}
 
-		var zipFiles = [];
-
-		files.forEach(o=>{
-
-			zipFiles.push(new Promise((resolve, reject)=>{
+		Promise.map(files, o => {
+			return new Promise((resolve, reject)=>{
 				var filename = o.split(`${folder}/`)[1];
 
 				fs.stat(o, (err, stats)=>{
@@ -121,7 +124,7 @@ function makeZip(folder, callback, ignore){
 					if (stats.isFile()){
 							fs.readFile(o, 'utf8', (err, data)=>{
 								if (err){
-									console.log("error reading file:",o);
+									console.log("error reading file:",o, err);
 									return
 								}
 								if (folder.indexOf('/lambdaBuilder')!==-1 && filename ==='package.json'){
@@ -136,10 +139,10 @@ function makeZip(folder, callback, ignore){
 						resolve();
 					}
 				})
-			}));
-		});
-
-		Promise.all(zipFiles).then(()=>{
+			});
+		},{
+			concurrency: 10
+		}).then(()=>{
 			var data = zip.generate({base64:true, compression:'DEFLATE'});
 			if (callback) {
 				callback(data)
