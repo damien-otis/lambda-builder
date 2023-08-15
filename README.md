@@ -1,4 +1,12 @@
-"# lambda-builder"
+"lambda-builder1"
+
+This program works as a "livereload" for Lambda functions. It watches local Lambdas folder for changes, and if a change is made
+then it will create a new .ZIP file, upload to S3 and deploy it to a Lambda function. If it's the first time the Lambda is being
+deployed it will install node modules inside a Lambda running on AWS Linux, so that the deployment package has any modules that need
+to be compiled to run in the execution environment. For subsequent updates to source code, a new .ZIP file is not built - the file
+is updated in the local copy of the Lambda deployment .ZIP and the changes are uploaded to S3 and deployed, which is faster. 
+If the package.json file is updated with new dependencies, then the builder is run again in AWS Linux and a new .ZIP is created with new
+node_modules built, and then it is deployed to your Lambda function.
 
 Install:
 
@@ -46,10 +54,3 @@ ROLE is the execution role the Lambdas will use to run. This can also be specifi
 
 ENVIRONMENT is optional and can be used to specify different versions of the Lambda, usually to be used for 'production' and 'staging' and 'dev'.
 
-This program works as a "livereload" for Lambda functions. It watches local Lambdas folder for changes, and if a change is made
-then it will create a new .ZIP file, upload to S3 and deploy it to a Lambda function. If it's the first time the Lambda is being
-deployed it will install node modules inside a Lambda running on AWS Linux, so that the deployment package has any modules that need
-to be compiled to run in the execution environment. For subsequent updates to source code, a new .ZIP file is not built - the file
-is updated in the local copy of the Lambda deployment .ZIP and the changes are uploaded to S3 and deployed, which is faster. 
-If the package.json file is updated with new dependencies, then the builder is run again in AWS and a new .ZIP is created with new
-node_modules built, and then it is deployed to your Lambda function.
