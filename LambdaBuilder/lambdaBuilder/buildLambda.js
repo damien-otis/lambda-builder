@@ -64,7 +64,7 @@ function buildLambda(zipData, name, callback){
 								Key: `${name}.zip`,
 								ContentType: 'application/zip'
 							};
-console.log("PARAMS",params);
+							//console.log("buildLambda PARAMS",params);
 							s3.putObject(params, function(err, data) {
 								if (err) {
 									console.log(err, err.stack); // an error occurred

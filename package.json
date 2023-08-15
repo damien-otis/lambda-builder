@@ -1,6 +1,6 @@
 {
-    "name": "lambda-builder",
-    "version": "1.0.0",
+    "name": "lambda-builder1",
+    "version": "1.0.1",
     "description": "",
     "preferGlobal": true,
     "main": "./index.js",
@@ -13,8 +13,7 @@
         "postinstall": "node postinstall.js"
     },
     "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Ylopo/lambda-builder.git"
+        "type": "git"
     },
     "keywords": [],
     "author": "Damien Otis",
@@ -30,6 +29,5 @@
         "node-zip": "^1.1.1",
         "unzipper": "^0.10.11",
         "yargs": "^11.0.0"
-    },
-    "globalInstalledPath": "C:\\Program Files\\nodejs\\node_modules\\lambda-builder"
+    }
 }

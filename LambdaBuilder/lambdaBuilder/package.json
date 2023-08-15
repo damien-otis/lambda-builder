@@ -1,5 +1,5 @@
 {
-    "name": "lambdaBuilder",
+    "name": "lambdaBuilder1",
     "version": "1.0.0",
     "description": "A Lambda That Builds Lambdas",
     "main": "index.js",
@@ -10,8 +10,7 @@
     "author": "damien-otis",
     "license": "ISC",
     "repository": {
-        "type": "git",
-        "url": "git+https://github.com/damien-otis/lambda-builder.git"
+        "type": "git"
     },
     "dependencies": {
         "bluebird": "^3.5.1",
