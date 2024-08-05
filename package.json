@@ -1,0 +1,33 @@
+{
+    "name": "lambda-builder1",
+    "version": "1.0.3",
+    "description": "",
+    "preferGlobal": true,
+    "main": "./index.js",
+    "bin": {
+        "lambda-builder": "./index.js"
+    },
+    "scripts": {
+        "watch": "node lambda-builder.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "postinstall": "node postinstall.js"
+    },
+    "repository": {
+        "type": "git"
+    },
+    "keywords": [],
+    "author": "Damien Otis",
+    "license": "ISC",
+    "dependencies": {
+        "atob": "^2.1.2",
+        "aws-sdk": "^2.221.1",
+        "bluebird": "^3.5.1",
+        "chokidar": "^2.0.3",
+        "deepmerge": "^2.1.0",
+        "glob": "^7.1.2",
+        "node-console-colors": "^1.0.1",
+        "node-zip": "^1.1.1",
+        "unzipper": "^0.10.11",
+        "yargs": "^11.0.0"
+    }
+}
