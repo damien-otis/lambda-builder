@@ -32,7 +32,10 @@ var lambdaNodeVersions = [
 	'nodejs14.x', 'nodejs14.x',
 	'nodejs16.x', 'nodejs16.x',
 	'nodejs18.x', 'nodejs18.x',
-	
+	'nodejs20.x', 'nodejs20.x',
+	'nodejs22.x', 'nodejs22.x',
+	'nodejs24.x', 'nodejs24.x',
+	'nodejs26.x', 'nodejs26.x',
 ];
 
 var nodever = process.version;
