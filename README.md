@@ -30,18 +30,18 @@ The "default" AWS profile should have privledges to create IAM Roles if the Lamb
 
 # Usage:
 
-	lambda-builder --FOLDER=D:\some-project-folder\folder-containing-lambda-functions --REGION=us-west-1 --PROFILE=LambdaBuildIAMUser --BUCKET=lambda-builder-bucket --ROLE=LambdaBuilderExecuteRole --ENVIRONMENT=(required)
+lambda-builder --FOLDER=D:\some-project-folder\folder-containing-lambda-functions --REGION=us-west-1 --PROFILE=LambdaBuildIAMUser --BUCKET=lambda-builder-bucket --ROLE=LambdaBuilderExecuteRole --ENVIRONMENT=(required)
 
-	--ENVIRONMENT specifies a prefix for the name of the Lambda. This is so multiple people can create Lambdas for the same repository in the same AWS account. You can use --ENVIRONMENT=dev for developing or --ENVIRONMENT=prod for deploying your lambdas to "production". How you use this is up to you.
+--ENVIRONMENT specifies a prefix for the name of the Lambda. This is so multiple people can create Lambdas for the same repository in the same AWS account. You can use --ENVIRONMENT=dev for developing or --ENVIRONMENT=prod for deploying your lambdas to "production". How you use this is up to you.
 
-	Deploying without an environment namespace prefix requires using --DEPLOY=true which removes the --ENVIRONMENT input requirement and deploys lambdas without any namespace prefix.
+Deploying without an environment namespace prefix requires using --DEPLOY=true which removes the --ENVIRONMENT input requirement and deploys lambdas without any namespace prefix.
 
-	--FOLDER should be a local path to a folder, which contains folders, that contain lambda functions (see Expected folder structure above).
+--FOLDER should be a local path to a folder, which contains folders, that contain lambda functions (see Expected folder structure above).
 
-	This script will also create a '.build' folder at folder-containing-lambda-functions\.build for the local .ZIP deployment files. You could decide to add .build to your .gitignore file.
+--REGION is the region where the lambda runs.
 
-	--REGION is the region where the lambda runs.
+--PROFILE is the profile in the local .aws/credentials file that is used to send .ZIP files to S3 and run the LambdaBuilder inside AWS Lambda. It should have S3 full privledges, Lambda full privledges.
 
-	--PROFILE is the profile in the local .aws/credentials file that is used to send .ZIP files to S3 and run the LambdaBuilder inside AWS Lambda. It should have S3 full privledges, Lambda full privledges.
+--ROLE is the execution role the Lambdas will use to run. This can also be specified inside the package.json file for each lambda.
 
-	--ROLE is the execution role the Lambdas will use to run. This can also be specified inside the package.json file for each lambda.
+This script will also create a '.build' folder at folder-containing-lambda-functions\.build for the local .ZIP deployment files. You could decide to add .build to your .gitignore file.
