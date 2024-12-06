@@ -8,7 +8,7 @@ is updated in the local copy of the Lambda .ZIP file in the .build folder and th
 
 # Install:
 
-	npm install -g lambda-builder
+	npm install -g lambda-builder1
 
 After installing, change the directory to the folder where your lambdas are stored.
 
