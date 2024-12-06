@@ -14,32 +14,18 @@ const chokidar = require('chokidar');
 const atob = require('atob');
 
 const basePath = path.resolve(process.cwd())
-console.log("basePath:",basePath,'\n');
+// console.log("basePath:",basePath,'\n');
 
 const Zip = require('node-zip');
 const deepmerge = require('deepmerge');
 
 const { buildLambda, makeZip } = require('./LambdaBuilder/lambdaBuilder/buildLambda.js');
-//--------------------------------------------------------------------------------------------------------------
-//Match the nodejs version running locally if no version is specified in the configs
-
-const nodever = argv.NODEVER || process.version;
-const majver = parseInt(nodever.split('.')[0].replace(/[^0-9]/g,''), 10);
-if (majver&1 === 1) {
-	console.log(`Node version ${nodever} is not supported, only LTS releases are supported by AWS Lambda`);
-	process.exit()
-}
-const supportedNodeVer = `nodejs${majver}.x`;
-
-console.log('supportedNodeVer:', supportedNodeVer);
 
 const lambdaBuilderDir = path.dirname(fs.realpathSync(__filename));
 
 //const pkg = require(`${lambdaFolder}${path.sep}package.json`);
-console.log('>>lambdaBuilderDir:',lambdaBuilderDir);
+// console.log('>>lambdaBuilderDir:',lambdaBuilderDir);
 //--------------------------------------------------------------------------------------------------------------
-
-console.log("config",config)
 
 //if (!argv.FOLDER) {
 //	console.log("Please specify --FOLDER input argument of folder containling Lambda functions to watch for updates.");
@@ -53,7 +39,7 @@ if (process.env.INIT_CWD){
 	lambdaFolder = path.resolve(path.normalize(process.cwd().replace(/^\"|"$/g,'')));
 }
 
-console.log("LAMBDAFOLDER",lambdaFolder)
+// console.log("LAMBDAFOLDER",lambdaFolder)
 
 const buildFolder = `${lambdaFolder}/.build`;
 fs.stat(buildFolder, (err, stats)=>{
@@ -89,8 +75,15 @@ try{
 	} else {
 		console.log(" > Please use --BUCKET= to set AWS S3 bucket that lambda build into. The your default AWS profile must have full access there.\n");
 	}
-	if (argv.ENVIRONMENT){
-		config.environment = argv.ENVIRONMENT;
+	if (argv.DEPLOY === 'true'){
+		config.environment = "";
+	} else {
+		if (argv.ENVIRONMENT && !argv.DEPLOY){
+			config.environment = argv.ENVIRONMENT;
+		} else {
+			console.log("--ENVIRONMENT is required")
+			process.exit()
+		}
 	}
 
 	if (!config.region || !config.lambdaS3Bucket){
@@ -126,6 +119,18 @@ global.lambdaS3Bucket = config.lambdaS3Bucket;
 
 console.log("\nLambda Builder Config:",JSON.stringify(config,null,4));
 
+//--------------------------------------------------------------------------------------------------------------
+//Match the nodejs version running locally if no version is specified in the configs
+
+const nodever = argv.NODEVER || process.version;
+const majver = parseInt(nodever.split('.')[0].replace(/[^0-9]/g,''), 10);
+if (majver&1 === 1) {
+	console.log(`Node version ${nodever} is not supported, only LTS releases are supported by AWS Lambda`);
+	process.exit()
+}
+const supportedNodeVer = `nodejs${majver}.x`;
+console.log('supportedNodeVer:', supportedNodeVer);
+
 //-----------------------------------------------------------------------------------
 console.log("AWSPROFILE:",argv.AWSPROFILE)
 const AWS = require('aws-sdk');
@@ -153,7 +158,7 @@ doesLambdaExist('lambdaBuilder').catch(err=>{
 
 //-----------------------------------------------------------------------------------
 
-function getLambdaName(filePath, noEnv){
+function getLambdaName(filePath){
 	if (filePath.toLowerCase().indexOf('lambdabuilder')!==-1){
 		return 'lambdaBuilder'
 	}
@@ -162,7 +167,7 @@ function getLambdaName(filePath, noEnv){
 	if (lambdaPathBase === undefined){
 		lambdaPathBase = watchedFolders.filter(watchedFolder=>path.normalize(filePath).indexOf(watchedFolder)!==-1)[0];
 	}
-	var env = (config.environment && (noEnv != true)) ? config.environment + '_' : '';
+	var env = config.environment ? config.environment + '_' : '';
 	return env+(lambdaPathBase.split(path.sep).slice(-1));
 }
 
@@ -301,7 +306,7 @@ function updateFile(file, action) {
 				console.log(err, err.stack); // an error occurred
 			}
 
-			var thisLambdaFolder = getLambdaFolder(file)// path.normalize(`${lambdaFolder}${path.sep}${getLambdaName(file, true)}`);
+			var thisLambdaFolder = getLambdaFolder(file);
 
 			doesLambdaExist(lambdaName).then(data=>{
 				updateLambda(thisLambdaFolder)
@@ -330,7 +335,6 @@ function updateFile(file, action) {
 function installModules(file, action){
 	
 	var lambdaName = getLambdaName(file);
-	var lambdaNameEnv = getLambdaName(file, true);
 
 	console.log("------------------------------------------------------------------");
 	console.log("Building:",lambdaName);
@@ -349,7 +353,6 @@ function installModules(file, action){
 			var filename = path.normalize(o).split(path.sep).pop();
 
 			zipFiles.push(new Promise((resolve, reject)=>{
-console.log(o)
 				fs.readFile(o, 'utf8', (err, data)=>{
 					if (err){
 						console.log("error reading file:",o);

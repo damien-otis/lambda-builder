@@ -1,6 +1,6 @@
 {
     "name": "lambda-builder1",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "description": "",
     "preferGlobal": true,
     "main": "./index.js",
@@ -8,8 +8,6 @@
         "lambda-builder": "./index.js"
     },
     "scripts": {
-        "watch": "node lambda-builder.js",
-        "test": "echo \"Error: no test specified\" && exit 1",
         "postinstall": "node postinstall.js"
     },
     "repository": {
