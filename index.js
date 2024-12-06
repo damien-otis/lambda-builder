@@ -12,6 +12,7 @@ const path = require('path');
 const chokidar = require('chokidar');
 
 const atob = require('atob');
+const cc = require("node-console-colors");
 
 const basePath = path.resolve(process.cwd())
 // console.log("basePath:",basePath,'\n');
@@ -22,6 +23,9 @@ const deepmerge = require('deepmerge');
 const { buildLambda, makeZip } = require('./LambdaBuilder/lambdaBuilder/buildLambda.js');
 
 const lambdaBuilderDir = path.dirname(fs.realpathSync(__filename));
+
+const packageJSON = require('./package.json');
+console.log(`${cc._fg_white}${cc._bg_blue}Lambda Builder v${packageJSON.version}${cc._reset}`);
 
 //const pkg = require(`${lambdaFolder}${path.sep}package.json`);
 // console.log('>>lambdaBuilderDir:',lambdaBuilderDir);

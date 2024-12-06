@@ -1,6 +1,6 @@
 {
     "name": "lambda-builder1",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "description": "",
     "preferGlobal": true,
     "main": "./index.js",
@@ -24,7 +24,7 @@
         "chokidar": "^2.0.3",
         "deepmerge": "^2.1.0",
         "glob": "^7.1.2",
-        "node-console-colors": "^1.0.1",
+        "node-console-colors": "^1.1.5",
         "node-zip": "^1.1.1",
         "unzipper": "^0.10.11",
         "yargs": "^11.0.0"
