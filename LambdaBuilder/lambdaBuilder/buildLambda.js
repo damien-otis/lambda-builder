@@ -15,7 +15,6 @@ const argv = yargs.argv;
 
 const tmp_folder = os.tmpdir ? os.tmpdir() : os.tmpDir();
 const isLambda = (process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined);
-console.log("tmp_folder",tmp_folder);
 
 const packageJSON = require('./package.json');
 
