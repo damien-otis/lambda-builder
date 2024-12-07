@@ -262,14 +262,14 @@ function updateFile(file, action) {
 		last_update_tmr = undefined;
 	}, 250);
 
+	console.log("------------------------------------------------------------------");
 	console.log("updateFile",file,action);
 
 	var lambdaName = getLambdaName(file);
-
-	console.log("------------------------------------------------------------------");
+	var lambdaFolder = getLambdaFolder(file);
 	console.log("Updating:",lambdaName)
 
-	var zipFile = path.normalize(`${lambdaFolder}${path.sep}.build${path.sep}${lambdaName}.zip`);
+	var zipFile = path.normalize(`./.build${path.sep}${lambdaName}.zip`);
 
 	fs.stat(zipFile, (err, stats)=>{
 		if (err) {
@@ -289,7 +289,7 @@ function updateFile(file, action) {
 		var zipData = fs.readFileSync(zipFile, 'binary');
 		var zip = new Zip(zipData, {base64: false, checkCRC32: true});
 
-		var filePath = file.split(path.normalize(`${lambdaFolder}${path.sep}${lambdaName}${path.sep}`))[1];
+		var filePath = file.split(path.normalize(`${lambdaFolder}${path.sep}`))[1];
 
 		var fileData = fs.readFileSync(file);
 
@@ -340,18 +340,16 @@ function installModules(file, action){
 	
 	var lambdaName = getLambdaName(file);
 
-	console.log("------------------------------------------------------------------");
 	console.log("Building:",lambdaName);
 
 	var zip = new Zip();
 
 	var zipFiles = [];
-
-	var thisGlob = `${lambdaFolder}${path.sep}${lambdaName}${path.sep}**${path.sep}*`;
-	var ignoreModules = `${lambdaFolder}${path.sep}${lambdaName}${path.sep}node_modules${path.sep}**${path.sep}*`;
+	const folder = getLambdaFolder(file);
+	var thisGlob = `${folder}${path.sep}**${path.sep}*`;
+	var ignoreModules = `${folder}${path.sep}node_modules${path.sep}**${path.sep}*`;
 
 	glob(thisGlob, {nodir:true, ignore:[ignoreModules]}, (err,files) => {
-
 		files.forEach(o=>{
 			if (o.indexOf('node_modules')!==-1){return}
 			var filename = path.normalize(o).split(path.sep).pop();
