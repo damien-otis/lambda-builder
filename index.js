@@ -338,10 +338,14 @@ function updateFile(file, action) {
 
 function installModules(file, action){
 	
-	var lambdaName = getLambdaName(file);
-
+	const lambdaName = getLambdaName(file);
+	const folderName = getLambdaFolder(file);
+	console.log('-=-=-=-=-=-=-=-=-=-=-=-=')
 	console.log("Building:",lambdaName);
-
+	console.log('file', file);
+	console.log('folder', getLambdaFolder(file));
+	
+	
 	var zip = new Zip();
 
 	var zipFiles = [];
@@ -349,10 +353,19 @@ function installModules(file, action){
 	var thisGlob = `${folder}${path.sep}**${path.sep}*`;
 	var ignoreModules = `${folder}${path.sep}node_modules${path.sep}**${path.sep}*`;
 
+console.log("thisGlob",thisGlob)
+console.log("ignoreModules",ignoreModules)
+console.log("folder",folder)
+
+
 	glob(thisGlob, {nodir:true, ignore:[ignoreModules]}, (err,files) => {
+console.log("files",files)		
 		files.forEach(o=>{
 			if (o.indexOf('node_modules')!==-1){return}
-			var filename = path.normalize(o).split(path.sep).pop();
+			//var filename = path.normalize(o).split(path.sep).pop();
+			var filename = path.resolve(o).split(folderName+path.sep)[1].replace(new RegExp(`/\\${path.sep}/`,'g'), '/');
+
+console.log('filename',filename)
 
 			zipFiles.push(new Promise((resolve, reject)=>{
 				fs.readFile(o, 'utf8', (err, data)=>{

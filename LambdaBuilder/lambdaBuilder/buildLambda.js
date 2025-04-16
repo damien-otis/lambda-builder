@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, execSync  } = require('child_process');
 
 const Promise = require('bluebird');
 const Duplex = require('stream').Duplex;
@@ -18,6 +18,7 @@ const isLambda = (process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined);
 
 const packageJSON = require('./package.json');
 
+
 const AWS = require('aws-sdk');
 if (!isLambda){
 	AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: argv.AWSPROFILE || 'default'}); // {profile: config.profile}
@@ -31,7 +32,7 @@ module.exports = {
 };
 
 function buildLambda(zipData, name, callback){
-	var data = new Buffer(zipData, 'base64');
+	var data = Buffer.from(zipData, 'base64');
 	var stream = bufferToStream(data);
 
 	var lambdaFolder = `${tmp_folder}${path.sep}${name}`;
@@ -46,24 +47,31 @@ function buildLambda(zipData, name, callback){
 
 			stream.pipe(unzip.Extract({path: lambdaFolder}).on('close',function(){
 
+//exec('ls -lAF', (e,x)=>{console.log("Extracted files...",e||x)}, {cwd:lambdaFolder, env: process.env})
+
 				console.log("Installing...");
 
 				process.env.HOME = lambdaFolder;
+				process.env.NPM_CONFIG_CACHE = '/tmp/.npm';
+			
+				startProcess(`npm install`, (result)=>{ // --no-progress
 
-				startProcess('npm install --no-progress', ()=>{ //
+//exec('ls -lAF '+path.join(lambdaFolder , 'node_modules'), (e,x)=>{console.log("installed files...",e||x)}, {cwd:path.join(lambdaFolder , 'node_modules'), env: process.env})
 
 					console.log("Zipping...");
 
 					makeZip(lambdaFolder, (packagedZip) => {
+console.log("zip done")						
+console.log("isLambda?", isLambda);
 
 						if (isLambda) {
 							let params = {
-								Body:  new Buffer(packagedZip,'base64'),
+								Body:  Buffer.from(packagedZip,'base64'),
 								Bucket: packageJSON.lambdaS3Bucket,
 								Key: `${name}.zip`,
 								ContentType: 'application/zip'
 							};
-							//console.log("buildLambda PARAMS",params);
+							console.log("buildLambda PARAMS",params);
 							s3.putObject(params, function(err, data) {
 								if (err) {
 									console.log(err, err.stack); // an error occurred
@@ -80,7 +88,7 @@ function buildLambda(zipData, name, callback){
 						}
 					});
 				},{
-					cwd:lambdaFolder,
+					cwd: lambdaFolder,
 					env: process.env,
 					maxBuffer: 1024 * 1024
 				});
@@ -105,13 +113,20 @@ function makeZip(folder, callback, ignore){
 	if (ignore) {
 		options.ignore = ignore;
 	}
-	glob(globpath, options, (err,files)=>{
-
+	console.log("makeZip globpath", globpath)
+	glob(globpath, options, async (err,files)=>{
+console.log("glob files", files)
 		if (err){
 			return callback(err);
 		}
 
-		Promise.map(files, o => {
+		if (files.length === 0){
+			console.log("No files to zip?")
+			return callback();
+		}
+
+		await Promise.map(files, o => {
+			console.log("zip file" , o)
 			return new Promise((resolve, reject)=>{
 				var filename = o.split(`${folder}/`)[1];
 
@@ -146,6 +161,10 @@ function makeZip(folder, callback, ignore){
 			if (callback) {
 				callback(data)
 			}
+		}).catch(e=>{
+			if (callback) {
+				callback(e)
+			}
 		})
 
 	});
@@ -163,7 +182,7 @@ function bufferToStream(buffer) {
 // --------------------------------------------------------------------------------------------------------
 
 function startProcess(command, callback, options){
-
+	
 	var currentProc = exec(command, options);
 
 	currentProc.stdout.on('data', (data) => {
@@ -171,16 +190,22 @@ function startProcess(command, callback, options){
 	});
 
 	currentProc.stderr.on('data', (data) => {
-	//	console.log(`\nCommand:${command}\n  Err:${data}`);
+		console.log(`\nCommand:${command}\n  Err:${data}`);
 	});
 
 	currentProc.on('data', (data) => {
 		console.log('\n',data.replace(/[\r\n]/g,''))
 	});
+	currentProc.on('error', (error) => {
+		console.log("process error", error);
+	})
 
-	currentProc.on('close', (data) => {
+	currentProc.on('close', (err, data) => {
 //		console.log(data);
-//		console.log("\nPROCESS CLOSED")
-		if (callback) {callback()};
+		if (err){
+			console.log("exec close error", err);
+		}
+		console.log("\n",command,"PROCESS CLOSED")
+		if (callback) {callback(data)};
 	});
 }
